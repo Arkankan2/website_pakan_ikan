@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Monitoring & Pakan Ikan Otomatis</title>
+  <!-- Google Fonts: Inter untuk tampilan modern, rapi, dan mudah dibaca -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js untuk grafik riwayat yang rapi -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header Aplikasi -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">🐟</div>
+        <div>
+          <h1 class="brand-title">Ambajaya Fish</h1>
+          <p class="brand-subtitle">Sistem Pakan & Pemantau Air Kolam</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Status Koneksi -->
+        <div class="connection-status" id="connectionBadge">
+          <span class="status-dot online"></span>
+          <span id="connectionText">Mode Simulasi (Aktif)</span>
+        </div>
+        <!-- Tombol Pengaturan Alat / Arduino -->
+        <button class="btn btn-outline" id="btnOpenSettings" title="Pengaturan Koneksi Arduino">
+          ⚙️ Pengaturan Alat
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Konten Utama -->
+  <main class="main-container">
+
+    <!-- Banner Waktu & Status Sistem -->
+    <section class="overview-banner">
+      <div class="banner-info">
+        <h2 id="greetingTitle">Selamat Datang di Kontrol Kolam Ikan</h2>
+        <p id="currentDateTime">Memuat waktu sistem...</p>
+      </div>
+      <div class="banner-quick-stats">
+        <div class="quick-pill">
+          <span class="pill-label">Pakan Terjadwal Berikutnya:</span>
+          <span class="pill-value" id="nextFeedScheduleBadge">17:00 (50 gr)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Kartu Parameter Utama (Suhu, Pakan, Kekeruhan, Sisa Pakan) -->
+    <section class="cards-grid">
+
+      <!-- Kartu 1: Suhu Air -->
+      <div class="metric-card" id="cardSuhu">
+        <div class="metric-header">
+          <span class="metric-title">Suhu Air</span>
+          <span class="metric-icon">🌡️</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value-wrapper">
+            <span class="metric-value" id="tempValue">28.5</span>
+            <span class="metric-unit">°C</span>
+          </div>
+          <div class="status-pill status-safe" id="tempStatus">Normal (Ideal)</div>
+        </div>
+        <div class="metric-footer">
+          <div class="range-bar-container">
+            <div class="range-bar-fill" id="tempBar" style="width: 65%;"></div>
+          </div>
+          <div class="range-labels">
+            <span>Dingin (&lt;25°C)</span>
+            <span>Ideal (26-30°C)</span>
+            <span>Panas (&gt;31°C)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kartu 2: Kekeruhan Air -->
+      <div class="metric-card" id="cardKeruh">
+        <div class="metric-header">
+          <span class="metric-title">Kekeruhan Air</span>
+          <span class="metric-icon">💧</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value-wrapper">
+            <span class="metric-value" id="turbidityValue">18</span>
+            <span class="metric-unit">NTU</span>
+          </div>
+          <div class="status-pill status-safe" id="turbidityStatus">Air Jernih</div>
+        </div>
+        <div class="metric-footer">
+          <div class="range-bar-container">
+            <div class="range-bar-fill" id="turbidityBar" style="width: 25%;"></div>
+          </div>
+          <div class="range-labels">
+            <span>Jernih (&lt;25)</span>
+            <span>Sedang (25-50)</span>
+            <span>Keruh (&gt;50)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kartu 3: Total Pakan Dikeluarkan Hari Ini -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Pakan Hari Ini</span>
+          <span class="metric-icon">⚖️</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value-wrapper">
+            <span class="metric-value" id="feedTodayValue">120</span>
+            <span class="metric-unit">Gram</span>
+          </div>
+          <div class="sub-indicator">
+            Dari target harian <strong id="feedTargetLabel">200g</strong>
+          </div>
+        </div>
+        <div class="metric-footer">
+          <div class="progress-info">
+            <span>Pemberian: <b id="feedCountToday">3 kali</b></span>
+            <span id="feedPercentToday">60%</span>
+          </div>
+          <div class="range-bar-container">
+            <div class="range-bar-fill" id="feedTodayBar" style="width: 60%; background-color: #2b8a3e;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kartu 4: Kapasitas Tabung Pakan -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Sisa di Tabung</span>
+          <span class="metric-icon">🌾</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value-wrapper">
+            <span class="metric-value" id="storageGrams">880</span>
+            <span class="metric-unit">Gram</span>
+          </div>
+          <div class="status-pill status-safe" id="storageStatus">Kapasitas 88%</div>
+        </div>
+        <div class="metric-footer">
+          <div class="progress-info">
+            <span>Kapasitas Tabung: <b>1000 gr</b></span>
+            <button class="btn-link" id="btnRefill">Isi Ulang</button>
+          </div>
+          <div class="range-bar-container">
+            <div class="range-bar-fill" id="storageBar" style="width: 88%; background-color: #0c8599;"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Baris Utama 2 Kolom: Kontrol Pakan & Grafik Pantau -->
+    <div class="content-columns">
+
+      <!-- Kolom Kiri: Kontrol & Jadwal Pakan -->
+      <div class="column-left">
+
+        <!-- Panel Beri Pakan Cepat (Manual) -->
+        <section class="card panel-card">
+          <div class="card-header">
+            <h3>Keluarkan Pakan Manual</h3>
+            <span class="badge">Dispenser Servo</span>
+          </div>
+          <div class="card-body">
+            <p class="section-desc">Pilih jumlah pakan yang ingin dikeluarkan langsung ke kolam:</p>
+            
+            <div class="feed-options-grid">
+              <button class="feed-preset-btn" data-grams="10">10 Gram</button>
+              <button class="feed-preset-btn active" data-grams="25">25 Gram</button>
+              <button class="feed-preset-btn" data-grams="50">50 Gram</button>
+              <button class="feed-preset-btn" data-grams="100">100 Gram</button>
+            </div>
+
+            <div class="custom-gram-input">
+              <label for="customGramInput">Atau tentukan takaran manual (Gram):</label>
+              <div class="input-with-button">
+                <input type="number" id="customGramInput" min="5" max="300" value="25" placeholder="Contoh: 30">
+                <span class="input-unit">gram</span>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-block btn-feed" id="btnDispenseFeed">
+              <span class="btn-icon">🚀</span> Keluarkan <span id="dispenseGramsLabel">25</span> Gram Pakan
+            </button>
+
+            <!-- Status animasi saat mengeluarkan pakan -->
+            <div class="feed-action-progress" id="feedActionProgress" style="display: none;">
+              <div class="spinner"></div>
+              <span id="feedActionStatusText">Motor Servo berputar mengeluarkan pakan...</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Panel Kalkulator Kebutuhan Pakan -->
+        <section class="card panel-card">
+          <div class="card-header">
+            <h3>Kalkulator Kebutuhan Pakan</h3>
+            <span class="badge">Rekomendasi</span>
+          </div>
+          <div class="card-body">
+            <p class="section-desc">Hitung dosis pakan harian berdasarkan biomassa & jumlah populasi ikan di kolam:</p>
+            
+            <div class="calc-form-grid">
+              <div class="form-group">
+                <label for="calcFishCount">Jumlah Ikan (Ekor)</label>
+                <input type="number" id="calcFishCount" value="100" min="1">
+              </div>
+              <div class="form-group">
+                <label for="calcAvgWeight">Rata-rata Berat Ikan (Gram/ekor)</label>
+                <input type="number" id="calcAvgWeight" value="50" min="5">
+              </div>
+              <div class="form-group">
+                <label for="calcFeedingRate">Persentase Pakan (% Bobot Tubuh)</label>
+                <select id="calcFeedingRate">
+                  <option value="0.02">2% (Perawatan / Air Dingin)</option>
+                  <option value="0.03" selected>3% (Standar / Ikan Dewasa)</option>
+                  <option value="0.04">4% (Pertumbuhan Cepat)</option>
+                  <option value="0.05">5% (Bibit / Benih Ikan)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="calcFrequency">Frekuensi Makan Sehari</label>
+                <select id="calcFrequency">
+                  <option value="2">2 Kali Sehari</option>
+                  <option value="3" selected>3 Kali Sehari</option>
+                  <option value="4">4 Kali Sehari</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Hasil Perhitungan -->
+            <div class="calc-results-box">
+              <div class="calc-result-item">
+                <span class="calc-lbl">Total Biomassa Ikan:</span>
+                <span class="calc-val" id="calcTotalBiomass">5.00 kg</span>
+              </div>
+              <div class="calc-result-item highlight">
+                <span class="calc-lbl">Total Kebutuhan Harian:</span>
+                <span class="calc-val" id="calcDailyNeed">150 Gram/hari</span>
+              </div>
+              <div class="calc-result-item">
+                <span class="calc-lbl">Takaran Per Jadwal:</span>
+                <span class="calc-val" id="calcPerSession">50 Gram/sesi</span>
+              </div>
+            </div>
+
+            <button class="btn btn-secondary btn-block" id="btnApplyTarget">
+              Gunakan sebagai Target Pakan Harian
+            </button>
+          </div>
+        </section>
+
+        <!-- Panel Jadwal Pakan Otomatis -->
+        <section class="card panel-card">
+          <div class="card-header">
+            <h3>Jadwal Pakan Otomatis</h3>
+            <button class="btn btn-sm btn-outline" id="btnToggleAddSchedule">+ Tambah Jam</button>
+          </div>
+          <div class="card-body">
+            <!-- Form tambah jadwal (toggle) -->
+            <div class="add-schedule-box" id="addScheduleBox" style="display: none;">
+              <h4>Tambah Jadwal Baru</h4>
+              <div class="schedule-inputs">
+                <input type="time" id="newScheduleTime" value="12:00">
+                <div class="input-with-button">
+                  <input type="number" id="newScheduleGrams" value="50" min="5" max="250" placeholder="Gram">
+                  <span class="input-unit">gram</span>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btnSaveSchedule">Simpan</button>
+              </div>
+            </div>
+
+            <div class="schedule-list" id="scheduleListContainer">
+              <!-- Item jadwal dimasukkan via Javascript -->
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Kolom Kanan: Grafik Real-time & Analisis Kondisi Air & Log -->
+      <div class="column-right">
+
+        <!-- Grafik Riwayat Sensor -->
+        <section class="card panel-card">
+          <div class="card-header">
+            <div>
+              <h3>Grafik Pemantauan Air</h3>
+              <p class="card-subhead">Perkembangan Suhu (°C) & Kekeruhan (NTU)</p>
+            </div>
+            <div class="chart-legend-badge">
+              <span class="legend-dot temp-dot"></span> Suhu
+              <span class="legend-dot turb-dot"></span> Kekeruhan
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrapper">
+              <canvas id="sensorChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- Panduan & Analisis Status Air -->
+        <section class="card panel-card">
+          <div class="card-header">
+            <h3>Analisis Kualitas Air & Saran Tindakan</h3>
+          </div>
+          <div class="card-body">
+            <div class="analysis-card" id="airAnalysisBox">
+              <div class="analysis-icon" id="analysisIcon">✅</div>
+              <div class="analysis-details">
+                <h4 id="analysisTitle">Kondisi Air Kolam Sangat Baik</h4>
+                <p id="analysisDesc">Suhu 28.5°C dan tingkat kekeruhan 18 NTU berada dalam batas normal untuk budidaya ikan air tawar. Ikan dapat makan dengan lahap.</p>
+              </div>
+            </div>
+
+            <div class="water-reference-table">
+              <h4>Batas Standar Kualitas Air:</h4>
+              <table class="table-simple">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Ideal</th>
+                    <th>Waspada</th>
+                    <th>Bahaya</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Suhu Air</strong></td>
+                    <td>26 - 30 °C</td>
+                    <td>24 - 25 °C atau 31 - 32 °C</td>
+                    <td>&lt; 23 °C atau &gt; 33 °C</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Kekeruhan (NTU)</strong></td>
+                    <td>&lt; 25 NTU (Jernih)</td>
+                    <td>25 - 50 NTU (Mulai Keruh)</td>
+                    <td>&gt; 50 NTU (Air Sangat Keruh)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Pakan Sisa</strong></td>
+                    <td>Habis dlm 10 mnt</td>
+                    <td>Ada sisa sedikit</td>
+                    <td>Banyak mengendap di dasar</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Log Riwayat Aktivitas & Pakan -->
+        <section class="card panel-card">
+          <div class="card-header">
+            <h3>Catatan Aktivitas & Pemberian Pakan</h3>
+            <button class="btn btn-sm btn-outline" id="btnClearLog">Hapus Riwayat</button>
+          </div>
+          <div class="card-body">
+            <div class="log-table-wrapper">
+              <table class="log-table">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Aktivitas</th>
+                    <th>Jumlah (Gram)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="logTableBody">
+                  <!-- Dimasukkan secara dinamis via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal Pengaturan Koneksi Arduino / ESP8266 / ESP32 -->
+  <div class="modal-backdrop" id="settingsModal" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Pengaturan Koneksi Hardware Arduino</h3>
+        <button class="modal-close" id="btnCloseModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text">
+          Website ini dapat berjalan mandiri (Mode Simulasi) atau dihubungkan langsung ke mikrokontroler seperti 
+          <strong>Arduino dengan WiFi ESP8266, ESP32, atau Webhook</strong>.
+        </p>
+
+        <div class="form-group">
+          <label>Mode Operasi:</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="connMode" value="simulation" checked id="modeSim">
+              <span>Mode Simulasi (Coba tampilan & perhitungan tanpa alat)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="connMode" value="hardware" id="modeHw">
+              <span>Mode Hardware Nyata (Hubungkan ke ESP32 / Arduino WiFi)</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="hardwareSettingsFields" style="display: none;">
+          <div class="form-group">
+            <label for="arduinoIpInput">IP Address atau URL ESP32/Arduino:</label>
+            <input type="text" id="arduinoIpInput" placeholder="http://192.168.1.50">
+            <small class="form-hint">Contoh endpoint JSON sensor: <code>http://192.168.1.50/data</code></small>
+          </div>
+          <div class="form-group">
+            <label for="feedApiUrlInput">Endpoint Perintah Servo Pakan:</label>
+            <input type="text" id="feedApiUrlInput" placeholder="http://192.168.1.50/feed?gram=">
+            <small class="form-hint">Contoh: akan memanggil <code>http://192.168.1.50/feed?gram=25</code></small>
+          </div>
+          <div class="form-group">
+            <label for="refreshInterval">Interval Ambil Data Sensor (detik):</label>
+            <input type="number" id="refreshInterval" value="3" min="1" max="60">
+          </div>
+          <button class="btn btn-outline btn-block" id="btnTestConnection">
+            Uji Sambungan ke Arduino
+          </button>
+          <div id="testConnectionResult" class="test-result-box" style="display: none;"></div>
+        </div>
+
+        <!-- Panduan Singkat Skema Hardware -->
+        <div class="guide-box">
+          <h4>💡 Contoh Hardware yang digunakan:</h4>
+          <ul>
+            <li><strong>Sensor Suhu:</strong> DS18B20 (Waterproof) terpasang di Pin D4</li>
+            <li><strong>Sensor Kekeruhan:</strong> Turbidity Sensor Gravity Analog di Pin A0</li>
+            <li><strong>Motor Pakan:</strong> Servo MG995 / Stepper Motor terpasang di Pin D2</li>
+            <li><strong>Mikrokontroler:</strong> ESP32 / ESP8266 NodeMCU terhubung ke WiFi rumah</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btnCancelSettings">Batal</button>
+        <button class="btn btn-primary" id="btnSaveSettings">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Standar -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>© 2026 Sistem Monitoring Kolam & Pakan Ikan Otomatis. Dibuat dengan HTML, CSS, dan JavaScript murni.</p>
+      <p class="footer-sub">Kompatibel untuk Layar Laptop, Tablet, dan Handphone.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
