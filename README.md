@@ -1,6 +1,6 @@
 # 🐟 PondMaster - Sistem Monitoring Air & Pakan Ikan Otomatis
 
-Aplikasi web pemantau kolam dan pengendali pakan ikan otomatis berbasis **HTML, CSS, dan JavaScript murni**. Didesain secara bersih, sederhana, mudah dibaca, serta responsif baik saat dibuka melalui **Laptop** maupun **Handphone (Smartphone)**.
+Aplikasi web pemantau kolam dan pengendali pakan ikan otomatis berbasis yang berbasis **HTML, CSS, dan JavaScript murni atau tanpa framework**. Didesain secara simpel agar dapat memeberikan kesan yang sederhana, mudah dibaca, serta responsif baik saat dibuka melalui **webiste** maupun **mobile (Smartphone)**.
 
 ---
 
